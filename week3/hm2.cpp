@@ -71,8 +71,8 @@ public:
                 }else{
                     ptr = ptr->getNext();
                 }
-            }
-            lastptr = ptr;
+            }             
+            lastptr = ptr;                                                 
         }while(swap);
 	}
 	
