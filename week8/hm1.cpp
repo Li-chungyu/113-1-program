@@ -5,37 +5,34 @@
 
 using namespace std;
 
-//design your won SuffixTreeNode using in SuffixTree
 class SuffixTreeNode {
-  
+  public:
+    unordered_map<char,SuffixTreeNode *> Child;
+    vector<int> index;
 };
 
 class SuffixTree {
 private:
     SuffixTreeNode *root;
-    string text;
+    std::string text;
 public:
-    SuffixTree(const string &text) : text(text) {
-        
+    SuffixTree(const std::string &text) : text(text) {
     }
 
-    bool exist(const string &substring) {
-
+    bool exist(const std::string &substring) {
     }
 
-    int count(const string &substring) {
-
+    int count(const std::string &substring) {
     }
 
     ~SuffixTree() {
-
     }
 };
 
 int main() {
-    string text = "";
+    std::string text = "";
     while(true) {
-      string temp;
+      std::string temp;
       getline(std::cin, temp);
       if(temp == "")
         break;
@@ -43,13 +40,13 @@ int main() {
     }
     SuffixTree tree(text);
 
-    string query;
+    std::string query;
     while(true) {
       getline(std::cin, query);
       if(query == "")
         break;
-      cout << "Existence of '" << query << "': " << (tree.exist(query) ? "Yes" : "No") << std::endl;
-      cout << "Count of '" << query << "': " << tree.count(query) << std::endl;
+      std::cout << "Existence of '" << query << "': " << (tree.exist(query) ? "Yes" : "No") << std::endl;
+      std::cout << "Count of '" << query << "': " << tree.count(query) << std::endl;
     }
     return 0;
 }
