@@ -8,24 +8,61 @@ using namespace std;
 class SuffixTreeNode {
   public:
     unordered_map<char,SuffixTreeNode *> Child;
-    vector<int> index;
+    vector<int> Index;
+    void insertSuffix(const string &suffix,int index){
+      SuffixTreeNode *cur = this;
+      for(char c : suffix){
+        if(cur->Child.find(c) == cur->Child.end()){
+          cur->Child[c] = new SuffixTreeNode;
+        }
+        cur = cur->Child[c];
+        cur->Index.push_back(index);
+      }
+    }
 };
 
 class SuffixTree {
 private:
     SuffixTreeNode *root;
-    std::string text;
+    string text;
+    void deleteTree(SuffixTreeNode *node){
+        for(auto child : node->Child){
+            delete child.second;
+        }
+        delete node;
+    }
 public:
-    SuffixTree(const std::string &text) : text(text) {
+    SuffixTree(const string &text) : text(text) {
+      root = new SuffixTreeNode;
+      for(int i=0;i<text.length();i++){
+        root->insertSuffix(text.substr(i),i);
+      }
     }
 
-    bool exist(const std::string &substring) {
+    bool exist(const string &substring) {
+        SuffixTreeNode *cur = root;
+        for(char c : substring){
+          if(cur->Child.find(c) == cur->Child.end()){
+            return false;
+          }
+          cur = cur->Child[c];
+        }
+        return true;
     }
 
-    int count(const std::string &substring) {
+    int count(const string &substring) {
+        SuffixTreeNode *cur = root;
+        for(char c : substring){
+          if(cur->Child.find(c) == cur->Child.end()){
+            return 0;
+          }
+          cur = cur->Child[c];
+        }
+        return cur->Index.size();
     }
 
     ~SuffixTree() {
+        deleteTree(root);
     }
 };
 

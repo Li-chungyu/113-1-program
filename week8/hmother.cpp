@@ -1,154 +1,198 @@
 #include <iostream>
-#include <string>
-#include <vector>
-#include <list>
-#include <unordered_map>
-using namespace std;
-// 我決定用 unordered_map 和 list 來分別保存node children和 insertion order
-/* 
-Trie, also known as "Prefix Tree" or "自點數", the keys of it are often string.
-Unlike binary tree, the key of Trie isn't stored in node. 
-Instead, a node's position in the trie defines the key with which it is associated.
-Application : text prediction 
- */
+#include <algorithm>
+#include <cstdlib>
+#include <stdexcept>
+#include <ctime>
+
 using namespace std;
 
-class Trie
-{
-	struct Node
-	{
-		Node() : isTerminal(nullptr) {}
-		vector<char> childrenOrder;  // 儲存每個字元insert的先後順序，彌補array或unordered_map沒辦法保存插入先後順序的缺點。
-		unordered_map<char, Node*> children;  // 代替wiki中的array，儲存每個對應的字元和節點。可以用比較少空間。
-		bool isTerminal; // 如果一個節點是一個字串的結束，則為true。
-	};
-	Node *root;
+template<class T>
+class Node {
 public:
-	/*
-	construct a Trie.
-	*/
-	Trie()
-	{
-		root = new Node;
+	Node() {
+		data = new T;
 	}
-	/*
-	search trie for key, return true if exist, false if not.
-	*/
-	bool search(string key)
-	{
-		Node *c = root;
-		// 遍歷輸入的字串
-		for(int i=0; i<key.length(); i++)
-		{
-			// find(k)會回傳k對應的pair的iterator，如果unordered_map沒有該pair，則回傳end()。
-			// 如果字典樹找不到該字元
-			if( c->children.find(key[i]) == c->children.end() )
-			{			
-					return false;
-			}
-			c = c->children[key[i]];
+	Node(T d) {
+		data = new T;
+		(*data) = d;
+	}
+	Node& operator=(T d) {
+		(*data) = d;
+		return *this;
+	}
+	friend ostream& operator<<(ostream& out, Node n) {
+		out << *(n.data);
+		return out;
+	}
+	friend ostream& operator<<(ostream& out, Node* n) {
+		out << *(n->data);
+		return out;
+	}
+	void setData(T d) {
+		*data = d;
+	}
+	T& getData() const {
+		return *data;
+	}
+protected:
+	T* data;
+};
+
+template<class T>
+class BinaryTreeNode : public Node<T> {
+public:
+	BinaryTreeNode() : Node<T>() {
+		left = NULL;
+		right = NULL;
+		height = 1;
+	}
+	BinaryTreeNode(T d) : Node<T>(d) {
+		left = NULL;
+		right = NULL;
+		height = 1;
+	}
+	BinaryTreeNode(BinaryTreeNode<T>* l, BinaryTreeNode<T>* r) : Node<T>() {
+		left = l;
+		right = r;
+		height = 1;
+	}
+	BinaryTreeNode(T d, BinaryTreeNode<T>* l, BinaryTreeNode<T>* r) : Node<T>(d) {
+		left = l;
+		right = r;
+		height = 1;
+	}
+	void setLeft(BinaryTreeNode<T>* l) {
+		left = l;
+	}
+	void setRight(BinaryTreeNode<T>* r) {
+		right = r;
+	}
+	BinaryTreeNode<T>*& getLeft() {
+		return left;
+	}
+	BinaryTreeNode<T>*& getRight() {
+		return right;
+	}
+	int getHeight() {
+		return height;
+	}
+	void setHeight(int h) {
+		height = h;
+	}
+private:
+	BinaryTreeNode<T>* left, * right;
+	int height;
+};
+
+template<class T>
+class AVLTree {
+private:
+	BinaryTreeNode<T>* root;
+
+	int getHeight(BinaryTreeNode<T>* node) {
+		return node ? node->getHeight() : 0;
+	}
+
+	int getBalanceFactor(BinaryTreeNode<T>* node) {
+		if (!node) return 0;
+		return getHeight(node->getLeft()) - getHeight(node->getRight());
+	}
+
+	BinaryTreeNode<T>* rotateRight(BinaryTreeNode<T>* y) {
+		BinaryTreeNode<T>* x = y->getLeft();
+		BinaryTreeNode<T>* T2 = x->getRight();
+
+		x->setRight(y);
+		y->setLeft(T2);
+
+		y->setHeight(max(getHeight(y->getLeft()), getHeight(y->getRight())) + 1);
+		x->setHeight(max(getHeight(x->getLeft()), getHeight(x->getRight())) + 1);
+											
+		return x;
+	}
+
+	BinaryTreeNode<T>* rotateLeft(BinaryTreeNode<T>* x) {
+		BinaryTreeNode<T>* y = x->getRight();
+		BinaryTreeNode<T>* T2 = y->getLeft();
+
+		y->setLeft(x);
+		x->setRight(T2);
+
+		x->setHeight(max(getHeight(x->getLeft()), getHeight(x->getRight())) + 1);
+		y->setHeight(max(getHeight(y->getLeft()), getHeight(y->getRight())) + 1);
+
+		return y;
+	}																																																
+
+	BinaryTreeNode<T>* insertNode(BinaryTreeNode<T>* node, T d) {
+		if (!node)
+			return new BinaryTreeNode<T>(d);
+
+		if (d < node->getData())
+			node->setLeft(insertNode(node->getLeft(), d));
+		else if (d > node->getData())
+			node->setRight(insertNode(node->getRight(), d));
+		else
+			return node;
+
+		node->setHeight(1 + max(getHeight(node->getLeft()), getHeight(node->getRight())));
+
+		int balance = getBalanceFactor(node);
+
+		// Left Left Case
+		if (balance > 1 && d < node->getLeft()->getData())
+			return rotateRight(node);
+
+		// Right Right Case
+		if (balance < -1 && d > node->getRight()->getData())
+			return rotateLeft(node);
+
+		// Left Right Case
+		if (balance > 1 && d > node->getLeft()->getData()) {
+			node->setLeft(rotateLeft(node->getLeft()));
+			return rotateRight(node);
 		}
-		// 就算字典樹中已經有對應的字元排列，還是必須判斷是否有key字串存在於樹中。
-		if(c->isTerminal)
-			return true;
-		else 
-			return false;
-	}
-	/*
-	insert value into trie.
-	*/
-	void insert(string value)
-	{
-		Node *c = root; // current node
-		for(int i=0; i<value.length(); i++)
-		{
-			if( c->children.find(value[i]) == c->children.end() )
-			{
-				c->children[value[i]] = new Node;
-				c->childrenOrder.push_back(value[i]);
-			}
-			c = c->children[value[i]];
+
+		// Right Left Case
+		if (balance < -1 && d < node->getRight()->getData()) {
+			node->setRight(rotateRight(node->getRight()));
+			return rotateLeft(node);
 		}
-		c->isTerminal = true;
+
+		return node;
 	}
-	/*
-	display trie in pre-order, each element in a line, 
-	display space before element base on the level of the element. 
-	level 1 for 2 space, level 2 for 4 space, level 3 for 6 space and so on, root is level 	0.
-	*/
-	/* 
-	印在同一行(inline printing)的規則:
-		1. 當節點只有一個子節點，而且這個子節點 isTerminal == false
-		2. 當節點 isTerminal == true 或 不再只有一個子節點時，停止 inline printing.
-	 */
-	void preorderPrint_R(Node *c, int level)
-    {
-        if (!c)
-            return; // Base case: null node
 
-        // Traverse children in insertion order
-        for (const auto ch : c->childrenOrder)
-        {
-            Node *child = c->children[ch];
+	void inorder(BinaryTreeNode<T>* cur, int n) {
+		if (cur == NULL)
+			return;
+		inorder(cur->getRight(), n + 1);
+		for (int j = 0; j < n; j++)
+			cout << "  ";
+		cout << cur->getData() << endl;
+		inorder(cur->getLeft(), n + 1);
+	}
 
-            // Print leading spaces for this level
-            for (int i = 0; i < (level + 1) * 2; i++)
-                cout << " ";
+public:
+	AVLTree() : root(NULL) {}
 
-            // Print the current character
-            cout << ch;
+	void insert(T d) {
+		root = insertNode(root, d);
+	}
 
-            // Traverse inline as long as the child has exactly one child and is not terminal
-            Node *temp = child;
-            while (temp->childrenOrder.size() == 1 && !temp->isTerminal)
-            {
-                char nextChar = temp->childrenOrder[0];
-                cout << nextChar; // Print inline
-                temp = temp->children[nextChar];
-            }
-
-            // End the line when inline traversal is done
-            cout << endl;
-
-            // Recursive call for the last node processed in inline traversal
-            preorderPrint_R(temp, level + 1);
-        }
-    }
-
-	void preorder()
-	{
-		cout << "[]" << endl;
-		preorderPrint_R(root, 0);
+	void inorder() {
+		inorder(root, 0);
 	}
 };
 
-int main()
-{
-	Trie *trie = new Trie();
-	string command, key, value;
-	while(1)
-	{
-		cin>>command;
-		if(command == "insert")
-		{
-			cin>>value;
-			trie->insert(value);
-		}
-		else if(command == "search")
-		{
-			cin>>key;
-			if(trie->search(key))
-				cout << "exist" << endl;
-			else
-				cout << "not exist" << endl;
-		}
-		else if(command == "print")
-		{
-			trie->preorder();
-		}
-		else if(command == "exit")
-		{
-			break;
-		}
+int main() {
+	AVLTree<int> tree;
+	srand(time(NULL));
+	for (int j = 0; j < 20; j++) {
+		int num = rand() % 100;
+		cout << "Inserting: " << num << endl;
+		tree.insert(num);
+		tree.inorder();
+		cout << "--------------" << endl;
 	}
+	return 0;
 }
