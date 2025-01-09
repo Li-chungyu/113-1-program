@@ -178,7 +178,7 @@ void splitNode(RTreeNode** root, RTreeNode* node, DataItem item) {
         node->children[node->count++] = newNode1;
         node->children[node->count++] = newNode2;
 
-        adjustMBR(newNode1);
+        adjustMBR(newNode1);     //防止split後新節點沒有初始化mbr
         adjustMBR(newNode2);
 
         // 調整當前節點的 MBR
